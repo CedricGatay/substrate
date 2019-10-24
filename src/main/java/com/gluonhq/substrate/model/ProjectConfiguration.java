@@ -41,6 +41,8 @@ public class ProjectConfiguration {
 
 //    private String graalLibsVersion;
     private String graalPath;
+    private String reflectionConfigFile;
+
     private String javaStaticSdkVersion;
     private String javafxStaticSdkVersion;
 //    private String graalLibsRoot;
@@ -409,6 +411,7 @@ public class ProjectConfiguration {
     public String toString() {
         return "ProjectConfiguration{" +
                 "graalPath='" + graalPath + '\'' +
+                "reflectionConfigFile='" + reflectionConfigFile + '\'' +
                 ", javaStaticSdkVersion='" + javaStaticSdkVersion + '\'' +
                 ", javafxStaticSdkVersion='" + javafxStaticSdkVersion + '\'' +
                 ", llcPath='" + llcPath + '\'' +
@@ -431,5 +434,13 @@ public class ProjectConfiguration {
                 ", appName='" + appName + '\'' +
                 ", mainClassName='" + mainClassName + '\'' +
                 '}';
+    }
+
+    public String getReflectionConfigFile() {
+        return reflectionConfigFile;
+    }
+
+    public void setReflectionConfigFile(String reflectionConfigFile) {
+        this.reflectionConfigFile = reflectionConfigFile;
     }
 }

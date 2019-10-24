@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class AbstractTargetConfiguration implements TargetConfiguration {
@@ -82,21 +83,36 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         ProcessBuilder compileBuilder = new ProcessBuilder(nativeImage);
         compileBuilder.command().add("--report-unsupported-elements-at-runtime");
         compileBuilder.command().add("-Djdk.internal.lambda.eagerlyInitialize=false");
-        compileBuilder.command().add("-H:+ExitAfterRelocatableImageWrite");
+        //compileBuilder.command().add("-H:+ExitAfterRelocatableImageWrite");
         compileBuilder.command().add("-H:TempDirectory="+tmpDir);
         compileBuilder.command().add("-H:+SharedLibrary");
         compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + createReflectionConfig(suffix));
+        compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + config.getReflectionConfigFile());
         compileBuilder.command().add("-H:JNIConfigurationFiles=" + createJNIConfig(suffix));
+        compileBuilder.command().add("--initialize-at-run-time=" +
+                "akka.protobuf.DescriptorProtos," +
+                "com.typesafe.config.impl.ConfigImpl$EnvVariablesHolder," +
+                "com.typesafe.config.impl.ConfigImpl$SystemPropertiesHolder");
+        //compileBuilder.command().add("--initialize-at-build-time");
         compileBuilder.command().addAll(getResources());
         compileBuilder.command().addAll(getTargetSpecificAOTCompileFlags());
         if (!getBundlesList().isEmpty()) {
             compileBuilder.command().add("-H:IncludeResourceBundles=" + String.join(",", getBundlesList()));
         }
         compileBuilder.command().add("-Dsvm.platform=org.graalvm.nativeimage.Platform$"+jniPlatform);
+        compileBuilder.command().add("--no-fallback");
+        compileBuilder.command().add("--allow-incomplete-classpath");
+        compileBuilder.command().add("-H:+ReportExceptionStackTraces");
         compileBuilder.command().add("-cp");
         compileBuilder.command().add(cp);
         compileBuilder.command().add(mainClassName);
         compileBuilder.redirectErrorStream(true);
+        System.out.println("Compile CLI : " + compileBuilder.command());
+        System.out.println("Compile ENV : ");
+        for (Map.Entry<String, String> e : compileBuilder.environment().entrySet()) {
+            System.out.println(e.getKey() + "=" + e.getValue());
+        }
+
         Process compileProcess = compileBuilder.start();
         InputStream inputStream = compileProcess.getInputStream();
         asynPrintFromInputStream(inputStream);
@@ -127,7 +143,8 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
     private String getJniPlatform( String os ) {
         switch (os) {
             case Constants.OS_LINUX: return "LINUX_AMD64";
-            case Constants.OS_IOS:return "DARWIN_AARCH64";
+            case Constants.OS_IOS:return "DARWIN_AARCH64";//"DARWIN_AArch64";
+            //case Constants.OS_IOS:return "DARWIN_AArch64";
             case Constants.OS_DARWIN: return "DARWIN_AMD64";
             default: throw new IllegalArgumentException("No support yet for " + os);
         }
