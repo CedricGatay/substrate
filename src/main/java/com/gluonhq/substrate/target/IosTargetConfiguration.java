@@ -76,8 +76,8 @@ public class IosTargetConfiguration extends AbstractTargetConfiguration {
         Path llcPath = Path.of(projectConfiguration.getGraalPath(),"bin", "llc");
         return Arrays.asList("-H:CompilerBackend=" + Constants.BACKEND_LLVM,
                 "-H:-SpawnIsolates",
-                "-Dsvm.targetArch=" + getArch());//,
-                //"-H:CustomLLC=" + llcPath.toAbsolutePath().toString());
+                "-Dsvm.targetArch=" + getArch(),
+                "-H:CustomLLC=" + llcPath.toAbsolutePath().toString());
     }
 
     @Override

@@ -93,7 +93,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
                 "akka.protobuf.DescriptorProtos," +
                 "com.typesafe.config.impl.ConfigImpl$EnvVariablesHolder," +
                 "com.typesafe.config.impl.ConfigImpl$SystemPropertiesHolder");
-        //compileBuilder.command().add("--initialize-at-build-time");
+        compileBuilder.command().add("--initialize-at-build-time");
         compileBuilder.command().addAll(getResources());
         compileBuilder.command().addAll(getTargetSpecificAOTCompileFlags());
         if (!getBundlesList().isEmpty()) {
@@ -103,6 +103,9 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         compileBuilder.command().add("--no-fallback");
         compileBuilder.command().add("--allow-incomplete-classpath");
         compileBuilder.command().add("-H:+ReportExceptionStackTraces");
+        compileBuilder.command().add("-H:LLVMBatchesPerThread=-1");
+
+
         compileBuilder.command().add("-cp");
         compileBuilder.command().add(cp);
         compileBuilder.command().add(mainClassName);
