@@ -55,6 +55,7 @@ public class ProjectConfiguration {
     private boolean usePrismSW = false;
     private boolean enableCheckHash = true;
     private boolean verbose = false;
+    private boolean buildStaticLib = false;
 
     private Triplet targetTriplet;
     private Triplet hostTriplet;
@@ -442,5 +443,14 @@ public class ProjectConfiguration {
 
     public void setReflectionConfigFile(String reflectionConfigFile) {
         this.reflectionConfigFile = reflectionConfigFile;
+    }
+
+
+    public boolean isBuildStaticLib() {
+        return buildStaticLib;
+    }
+
+    public void setBuildStaticLib(boolean buildStaticLib) {
+        this.buildStaticLib = buildStaticLib;
     }
 }

@@ -89,11 +89,11 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + createReflectionConfig(suffix));
         compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + config.getReflectionConfigFile());
         compileBuilder.command().add("-H:JNIConfigurationFiles=" + createJNIConfig(suffix));
+        compileBuilder.command().add("--initialize-at-build-time");
         compileBuilder.command().add("--initialize-at-run-time=" +
                 "akka.protobuf.DescriptorProtos," +
                 "com.typesafe.config.impl.ConfigImpl$EnvVariablesHolder," +
                 "com.typesafe.config.impl.ConfigImpl$SystemPropertiesHolder");
-        compileBuilder.command().add("--initialize-at-build-time");
         compileBuilder.command().addAll(getResources());
         compileBuilder.command().addAll(getTargetSpecificAOTCompileFlags());
         if (!getBundlesList().isEmpty()) {
@@ -103,7 +103,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         compileBuilder.command().add("--no-fallback");
         compileBuilder.command().add("--allow-incomplete-classpath");
         compileBuilder.command().add("-H:+ReportExceptionStackTraces");
-        compileBuilder.command().add("-H:LLVMBatchesPerThread=-1");
+        //compileBuilder.command().add("-H:LLVMBatchesPerThread=-1");
 
 
         compileBuilder.command().add("-cp");
@@ -162,6 +162,23 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             return false;
         }
 
+        ProcessBuilder linkBuilder = buildLinkBuilderCommand(paths, projectConfiguration);
+        String cmds = String.join(" ", linkBuilder.command());
+        System.err.println("cmd = "+cmds);
+        Process compileProcess = linkBuilder.start();
+        System.err.println("started linking");
+        int result = compileProcess.waitFor();
+        System.err.println("done linking");
+        if (result != 0 ) {
+            System.err.println("Linking failed. Details from linking below:");
+            System.err.println("Command was: "+cmds);
+            printFromInputStream(compileProcess.getInputStream());
+            return false;
+        }
+        return true;
+    }
+
+    private ProcessBuilder buildLinkBuilderCommand(ProcessPaths paths, ProjectConfiguration projectConfiguration) throws IOException {
         this.paths = paths;
         this.projectConfiguration = projectConfiguration;
         String appName = projectConfiguration.getAppName();
@@ -173,10 +190,20 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             throw new IllegalArgumentException("Linking failed, since there is no objectfile named "+objectFilename+" under "
                     +gvmPath.toString());
         }
-        ProcessBuilder linkBuilder = new ProcessBuilder(getLinker());
+        ProcessBuilder linkBuilder;
+        if (projectConfiguration.isBuildStaticLib()){
+            linkBuilder = new ProcessBuilder("ar");
+            linkBuilder.command().add("-rcs");
+        }else{
+            linkBuilder = new ProcessBuilder(getLinker());
+            linkBuilder.command().add("-o");
+        }
 
-        linkBuilder.command().add("-o");
-        linkBuilder.command().add(getAppPath(appName));
+        String appPath = getAppPath(appName);
+        if (projectConfiguration.isBuildStaticLib()){
+            appPath+=".a";
+        }
+        linkBuilder.command().add(appPath);
 
         Path gvmAppPath = gvmPath.resolve(appName);
         getAdditionalSourceFiles()
@@ -185,6 +212,16 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
         linkBuilder.command().add(objectFile.toString());
         linkBuilder.command().addAll(getTargetSpecificObjectFiles());
+        //exit early if building a static library, other symbols will need to be included "manually"
+        if (projectConfiguration.isBuildStaticLib()){
+            System.err.println("You will need to add libraries from " + projectConfiguration.getJavaStaticLibsPath()
+                    + " and also from " + Path.of(projectConfiguration.getGraalPath(), "lib", "svm", "clibraries", target.getOsArch2()));
+            if (projectConfiguration.isUseJavaFX()) {
+                System.err.println("  and also from " + projectConfiguration.getJavafxStaticLibsPath());
+            }
+            return linkBuilder;
+        }
+
         linkBuilder.command().add("-L" + projectConfiguration.getJavaStaticLibsPath());
         if (projectConfiguration.isUseJavaFX()) {
             linkBuilder.command().add("-L" + projectConfiguration.getJavafxStaticLibsPath());
@@ -202,19 +239,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         linkBuilder.command().add("-ldl");
         linkBuilder.command().addAll(getTargetSpecificLinkFlags(projectConfiguration.isUseJavaFX(), projectConfiguration.isUsePrismSW()));
         linkBuilder.redirectErrorStream(true);
-        String cmds = String.join(" ", linkBuilder.command());
-        System.err.println("cmd = "+cmds);
-        Process compileProcess = linkBuilder.start();
-        System.err.println("started linking");
-        int result = compileProcess.waitFor();
-        System.err.println("done linking");
-        if (result != 0 ) {
-            System.err.println("Linking failed. Details from linking below:");
-            System.err.println("Command was: "+cmds);
-            printFromInputStream(compileProcess.getInputStream());
-            return false;
-        }
-        return true;
+        return linkBuilder;
     }
 
     private void asynPrintFromInputStream (InputStream inputStream) {

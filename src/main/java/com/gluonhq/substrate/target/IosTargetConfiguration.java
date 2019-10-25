@@ -51,7 +51,7 @@ public class IosTargetConfiguration extends AbstractTargetConfiguration {
 
     @Override
     List<String> getTargetSpecificLinkFlags(boolean useJavaFX, boolean usePrismSW) {
-        return Arrays.asList("-w", "-fPIC",
+        return Arrays.asList("-w",// "-fPIC",
                 "-arch", Constants.ARCH_ARM64,
                 "-mios-version-min=11.0",
                 "-isysroot", getSysroot(),
