@@ -67,7 +67,7 @@ public class IosTargetConfiguration extends AbstractTargetConfiguration {
     List<String> getTargetSpecificCCompileFlags() {
         return Arrays.asList("-xobjective-c",
                 "-arch", getArch(),
-                "-Dsvn.targetArch=" + getArch(),
+                "-Dsvm.targetArch=" + getArch(),
                 "-isysroot", getSysroot());
     }
 
@@ -100,7 +100,7 @@ public class IosTargetConfiguration extends AbstractTargetConfiguration {
     public boolean link(ProcessPaths paths, ProjectConfiguration projectConfiguration) throws IOException, InterruptedException {
         boolean result = super.link(paths, projectConfiguration);
 
-        if (result) {
+        if (!projectConfiguration.isBuildStaticLib() && result) {
             createInfoPlist(paths, projectConfiguration);
 
             if (!isSimulator()) {
