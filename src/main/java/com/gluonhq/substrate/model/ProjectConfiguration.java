@@ -42,6 +42,7 @@ public class ProjectConfiguration {
 //    private String graalLibsVersion;
     private String graalPath;
     private String reflectionConfigFile;
+    private List<String> nativeBuildOptions;
 
     private String javaStaticSdkVersion;
     private String javafxStaticSdkVersion;
@@ -415,6 +416,7 @@ public class ProjectConfiguration {
                 "reflectionConfigFile='" + reflectionConfigFile + '\'' +
                 ", javaStaticSdkVersion='" + javaStaticSdkVersion + '\'' +
                 ", javafxStaticSdkVersion='" + javafxStaticSdkVersion + '\'' +
+                ", nativeBuildOptions='" + nativeBuildOptions + '\'' +
                 ", llcPath='" + llcPath + '\'' +
                 ", StaticRoot='" + StaticRoot + '\'' +
                 ", useJNI=" + useJNI +
@@ -452,5 +454,13 @@ public class ProjectConfiguration {
 
     public void setBuildStaticLib(boolean buildStaticLib) {
         this.buildStaticLib = buildStaticLib;
+    }
+
+    public List<String> getNativeBuildOptions() {
+        return nativeBuildOptions;
+    }
+
+    public void setNativeBuildOptions(List<String> nativeBuildOptions) {
+        this.nativeBuildOptions = nativeBuildOptions;
     }
 }

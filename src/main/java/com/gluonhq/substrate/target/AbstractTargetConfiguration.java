@@ -90,10 +90,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + config.getReflectionConfigFile());
         compileBuilder.command().add("-H:JNIConfigurationFiles=" + createJNIConfig(suffix));
         compileBuilder.command().add("--initialize-at-build-time");
-        compileBuilder.command().add("--initialize-at-run-time=" +
-                "akka.protobuf.DescriptorProtos," +
-                "com.typesafe.config.impl.ConfigImpl$EnvVariablesHolder," +
-                "com.typesafe.config.impl.ConfigImpl$SystemPropertiesHolder");
+        compileBuilder.command().addAll(config.getNativeBuildOptions());
         compileBuilder.command().addAll(getResources());
         compileBuilder.command().addAll(getTargetSpecificAOTCompileFlags());
         if (!getBundlesList().isEmpty()) {
