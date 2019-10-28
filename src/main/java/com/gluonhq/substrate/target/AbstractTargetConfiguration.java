@@ -82,6 +82,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         }
         String nativeImage = getNativeImagePath(config);
         ProcessBuilder compileBuilder = new ProcessBuilder(nativeImage);
+        compileBuilder.directory(paths.getSharedPath().toFile());
         compileBuilder.command().add("--report-unsupported-elements-at-runtime");
         compileBuilder.command().add("-Djdk.internal.lambda.eagerlyInitialize=false");
         //compileBuilder.command().add("-H:+ExitAfterRelocatableImageWrite");
@@ -208,6 +209,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         lipo.command().add("-output");
         Path slimmedLibJVMPath = Paths.get(paths.getTmpPath().toString(), "libjvm." + projectConfiguration.getTargetTriplet().getArch() + ".a");
         lipo.command().add(slimmedLibJVMPath.toString());
+        lipo.redirectErrorStream(true);
         Process lipoProcess = lipo.start();
         int lipoResult = lipoProcess.waitFor();
         if (lipoResult != 0){
@@ -224,6 +226,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         ar.directory(tmpPath.toFile());
         ar.command().add("-x");
         ar.command().add(file);
+        ar.redirectErrorStream(true);
         Process extractProcess = ar.start();
         int i = extractProcess.waitFor();
         if (i != 0){
@@ -249,17 +252,15 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         ProcessBuilder linkBuilder;
         if (projectConfiguration.isBuildStaticLib()){
             linkBuilder = new ProcessBuilder("ar");
+            linkBuilder.directory(paths.getSharedPath().toFile());
             linkBuilder.command().add("-vrcs");
+            linkBuilder.command().add(appName + ".a");
         }else{
             linkBuilder = new ProcessBuilder(getLinker());
             linkBuilder.command().add("-o");
+            linkBuilder.command().add(getAppPath(appName));
         }
-
-        String appPath = getAppPath(appName);
-        if (projectConfiguration.isBuildStaticLib()){
-            appPath+=".a";
-        }
-        linkBuilder.command().add(appPath);
+        linkBuilder.redirectErrorStream(true);
 
         Path gvmAppPath = gvmPath.resolve(appName);
         getAdditionalSourceFiles()
@@ -296,7 +297,6 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         linkBuilder.command().add("-lz");
         linkBuilder.command().add("-ldl");
         linkBuilder.command().addAll(getTargetSpecificLinkFlags(projectConfiguration.isUseJavaFX(), projectConfiguration.isUsePrismSW()));
-        linkBuilder.redirectErrorStream(true);
         return linkBuilder;
     }
 

@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 
 public class ProcessPaths {
 
+    private Path sharedPath;
     private Path buildRoot;
     private Path clientPath;
     private Path appPath;
@@ -56,6 +57,7 @@ public class ProcessPaths {
      *             |-- appName
      *             |-- gensrc
      *                 |-- mac or ios
+     *             |-- shared           <!-- shared library -->
      * |-- src
      *     |-- mac or ios
      *     |-- main
@@ -69,6 +71,7 @@ public class ProcessPaths {
         genPath = Files.createDirectories(appPath.resolve(Constants.GEN_PATH));
         tmpPath = Files.createDirectories(gvmPath.resolve(Constants.TMP_PATH));
         logPath = Files.createDirectories(gvmPath.resolve(Constants.LOG_PATH));
+        sharedPath = Files.createDirectories(gvmPath.resolve(Constants.SHARED_PATH));
         sourcePath = clientPath.getParent().getParent().resolve(Constants.SOURCE_PATH);
     }
 
@@ -102,6 +105,10 @@ public class ProcessPaths {
 
     public Path getLogPath() {
         return logPath;
+    }
+
+    public Path getSharedPath() {
+        return sharedPath;
     }
 }
 
