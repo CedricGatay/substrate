@@ -95,6 +95,7 @@ void JVM_DumpThreads() {
 fprintf(stderr, "THREADIMPLMISSING\n");
 }
 
+
 void Java_java_lang_Thread_resume0() {
 fprintf(stderr, "JAVATHREADIMPLMISSING\n");
 }
@@ -119,6 +120,16 @@ void Java_java_lang_Thread_suspend0() {
 fprintf(stderr, "JAVATHREADIMPLMISSING\n");
 }
 
+
+//FIXME bridge the gap for fillInStackTrace
+
 void JVM_FillInStackTrace(){
 fprintf(stderr, "THREADIMPLMISSING\n");
 }
+
+//FIXME bridge the gap for missing SocketOptions
+/*
+int Java_jdk_net_MacOSXSocketOptions_keepAliveOptionsSupported0(){
+    return 0;
+}
+*/

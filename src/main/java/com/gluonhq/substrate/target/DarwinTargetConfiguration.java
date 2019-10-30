@@ -46,7 +46,9 @@ public class DarwinTargetConfiguration extends AbstractTargetConfiguration {
     @Override
     List<String> getTargetSpecificLinkFlags(boolean useJavaFX, boolean usePrismSW) {
         if (!useJavaFX) {
-            return Arrays.asList("-Wl,-framework,Foundation", "-Wl,-framework,AppKit");
+            List<String> out = new ArrayList<>(Arrays.asList("-Wl,-framework,Foundation", "-Wl,-framework,AppKit"));
+            out.addAll(macoslibs);
+            return out;
         }
         String libPath = "-Wl,-force_load," + projectConfiguration.getJavafxStaticLibsPath() + "/";
         List<String> answer = new ArrayList<>(Arrays.asList(
@@ -62,6 +64,7 @@ public class DarwinTargetConfiguration extends AbstractTargetConfiguration {
     private static final List<String> macoslibs = Arrays.asList("-lffi",
             "-lpthread", "-lz", "-ldl", "-lstrictmath", "-llibchelper",
             "-ljava", "-lnio", "-lzip", "-lnet", "-ljvm", "-lobjc",
+            "-lc++", "-lsunec", "-lextnet",
             "-Wl,-framework,Foundation", "-Wl,-framework,AppKit",
             "-Wl,-framework,ApplicationServices", "-Wl,-framework,OpenGL",
             "-Wl,-framework,QuartzCore", "-Wl,-framework,Security");

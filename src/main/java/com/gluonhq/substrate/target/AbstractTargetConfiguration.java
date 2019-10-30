@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractTargetConfiguration implements TargetConfiguration {
 
-  //  static String[] C_RESOURCES = { "launcher.c",  "thread.c"};
+    //  static String[] C_RESOURCES = { "launcher.c",  "thread.c"};
     ProjectConfiguration projectConfiguration;
     ProcessPaths paths;
 
@@ -64,10 +64,10 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
     public boolean compile(ProcessPaths paths, ProjectConfiguration config, String cp) throws IOException, InterruptedException {
         this.projectConfiguration = config;
         this.paths = paths;
-        Triplet target =  config.getTargetTriplet();
+        Triplet target = config.getTargetTriplet();
         String suffix = target.getArchOs();
         String jniPlatform = getJniPlatform(target.getOs());
-        if (!compileAdditionalSources(paths, config) ) {
+        if (!compileAdditionalSources(paths, config)) {
             return false;
         }
         Path gvmPath = paths.getGvmPath();
@@ -86,11 +86,11 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         compileBuilder.command().add("--report-unsupported-elements-at-runtime");
         compileBuilder.command().add("-Djdk.internal.lambda.eagerlyInitialize=false");
         //compileBuilder.command().add("-H:+ExitAfterRelocatableImageWrite");
-        compileBuilder.command().add("-H:TempDirectory="+tmpDir);
+        compileBuilder.command().add("-H:TempDirectory=" + tmpDir);
         compileBuilder.command().add("-H:+SharedLibrary");
         compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + createReflectionConfig(suffix));
         compileBuilder.command().add("-H:ReflectionConfigurationFiles=" + config.getReflectionConfigFile());
-        compileBuilder.command().add("-H:JNIConfigurationFiles=" + createJNIConfig(suffix));
+        compileBuilder.command().add("-H:JNIConfigurationFiles=" + createJNIConfig(suffix, config));
         compileBuilder.command().add("--initialize-at-build-time");
         compileBuilder.command().addAll(config.getNativeBuildOptions());
         compileBuilder.command().addAll(getResources());
@@ -98,7 +98,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         if (!getBundlesList().isEmpty()) {
             compileBuilder.command().add("-H:IncludeResourceBundles=" + String.join(",", getBundlesList()));
         }
-        compileBuilder.command().add("-Dsvm.platform=org.graalvm.nativeimage.Platform$"+jniPlatform);
+        compileBuilder.command().add("-Dsvm.platform=org.graalvm.nativeimage.Platform$" + jniPlatform);
         compileBuilder.command().add("--no-fallback");
         compileBuilder.command().add("--allow-incomplete-classpath");
         compileBuilder.command().add("-H:+ReportExceptionStackTraces");
@@ -124,54 +124,58 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         boolean failure = result != 0;
         String extraMessage = null;
         if (!failure) {
-            String nameSearch = mainClassName.toLowerCase()+".o";
+            String nameSearch = mainClassName.toLowerCase() + ".o";
             Path p = FileOps.findFile(gvmPath, nameSearch);
             if (p == null) {
                 failure = true;
-                extraMessage = "Objectfile should be called "+nameSearch+" but we didn't find that under "+gvmPath.toString();
+                extraMessage = "Objectfile should be called " + nameSearch + " but we didn't find that under " + gvmPath.toString();
             }
         }
         if (failure) {
             System.err.println("Compilation failed with result = " + result);
             printFromInputStream(inputStream);
 
-            if (extraMessage!= null) {
-                System.err.println("Additional information: "+extraMessage);
+            if (extraMessage != null) {
+                System.err.println("Additional information: " + extraMessage);
             }
         }
         return !failure;
     }
 
-    private String getJniPlatform( String os ) {
+    private String getJniPlatform(String os) {
         switch (os) {
-            case Constants.OS_LINUX: return "LINUX_AMD64";
-            case Constants.OS_IOS:return "DARWIN_AARCH64";//"DARWIN_AArch64";
+            case Constants.OS_LINUX:
+                return "LINUX_AMD64";
+            case Constants.OS_IOS:
+                return "DARWIN_AARCH64";//"DARWIN_AArch64";
             //case Constants.OS_IOS:return "DARWIN_AArch64";
-            case Constants.OS_DARWIN: return "DARWIN_AMD64";
-            default: throw new IllegalArgumentException("No support yet for " + os);
+            case Constants.OS_DARWIN:
+                return "DARWIN_AMD64";
+            default:
+                throw new IllegalArgumentException("No support yet for " + os);
         }
     }
 
     @Override
     public boolean link(ProcessPaths paths, ProjectConfiguration projectConfiguration) throws IOException, InterruptedException {
 
-        if ( !Files.exists(projectConfiguration.getJavaStaticLibsPath())) {
+        if (!Files.exists(projectConfiguration.getJavaStaticLibsPath())) {
             System.err.println("We can't link because the static Java libraries are missing. " +
-                    "The path "+ projectConfiguration.getJavaStaticLibsPath() + " does not exist.");
+                    "The path " + projectConfiguration.getJavaStaticLibsPath() + " does not exist.");
             return false;
         }
 
         extractObjectFromLibrariesForLinking(paths, projectConfiguration);
         ProcessBuilder linkBuilder = buildLinkBuilderCommand(paths, projectConfiguration);
         String cmds = String.join(" ", linkBuilder.command());
-        System.err.println("cmd = "+cmds);
+        System.err.println("cmd = " + cmds);
         Process compileProcess = linkBuilder.start();
         System.err.println("started linking");
         int result = compileProcess.waitFor();
         System.err.println("done linking");
-        if (result != 0 ) {
+        if (result != 0) {
             System.err.println("Linking failed. Details from linking below:");
-            System.err.println("Command was: "+cmds);
+            System.err.println("Command was: " + cmds);
             printFromInputStream(compileProcess.getInputStream());
             return false;
         }
@@ -179,18 +183,19 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
     }
 
 
-
     private void extractObjectFromLibrariesForLinking(ProcessPaths paths, ProjectConfiguration projectConfiguration) throws IOException, InterruptedException {
-        if (!projectConfiguration.isBuildStaticLib()){ return; }
+        if (!projectConfiguration.isBuildStaticLib()) {
+            return;
+        }
 
 
-        Path tmpPath = Paths.get(paths.getTmpPath().toString(),"linker");
-        if (!Files.exists(tmpPath)){
+        Path tmpPath = Paths.get(paths.getTmpPath().toString(), "linker");
+        if (!Files.exists(tmpPath)) {
             Files.createDirectories(tmpPath);
         }
         //Missing pthread / z / dl, need to add them as dependency on mobile build
 
-        List<String> javaLibs = Arrays.asList("libjava", "libnio", "libzip", "libnet" );
+        List<String> javaLibs = Arrays.asList("libjava", "libnio", "libzip", "libnet", "libsunec", "libextnet");
         Path javaStaticLibsPath = projectConfiguration.getJavaStaticLibsPath();
 
         for (String javaLib : javaLibs) {
@@ -200,25 +205,29 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     /* there are fat files here, need to use lipo extract, libchelper is a x86_64 one only and it works, it might be useless to run on device
         Only libjvm seem useful, run lipo then ar to extract symbols, the other ones are "libstrictmath", "liblibchelper" */
-
-        Path svmPath = Path.of(projectConfiguration.getGraalPath(), "lib", "svm", "clibraries", projectConfiguration.getTargetTriplet().getOsArch2(), "libjvm.a");
-        ProcessBuilder lipo = new ProcessBuilder("lipo");
-        lipo.command().add(svmPath.toString());
-        lipo.command().add("-thin");
-        lipo.command().add(projectConfiguration.getTargetTriplet().getArch());
-        lipo.command().add("-output");
-        Path slimmedLibJVMPath = Paths.get(paths.getTmpPath().toString(), "libjvm." + projectConfiguration.getTargetTriplet().getArch() + ".a");
-        lipo.command().add(slimmedLibJVMPath.toString());
-        lipo.redirectErrorStream(true);
-        Process lipoProcess = lipo.start();
-        int lipoResult = lipoProcess.waitFor();
-        if (lipoResult != 0){
-            System.err.println("Error while running lipo on file to extract proper arch");
-            System.err.println("Command was: " + String.join(" ", lipo.command()));
-            printFromInputStream(lipoProcess.getInputStream());
-            printFromInputStream(lipoProcess.getErrorStream());
+        List<String> jvmLibs = Arrays.asList("libjvm", "libstrictmath", "liblibchelper");
+        for (String jvmLib : jvmLibs) {
+            Path svmPath = Path.of(projectConfiguration.getGraalPath(), "lib", "svm", "clibraries", projectConfiguration.getTargetTriplet().getOsArch2(), jvmLib + ".a");
+            ProcessBuilder lipo = new ProcessBuilder("lipo");
+            lipo.command().add(svmPath.toString());
+            lipo.command().add("-thin");
+            lipo.command().add(projectConfiguration.getTargetTriplet().getArch());
+            lipo.command().add("-output");
+            Path slimmedLibJVMPath = Paths.get(paths.getTmpPath().toString(), jvmLib + "." + projectConfiguration.getTargetTriplet().getArch() + ".a");
+            lipo.command().add(slimmedLibJVMPath.toString());
+            lipo.redirectErrorStream(true);
+            Process lipoProcess = lipo.start();
+            int lipoResult = lipoProcess.waitFor();
+            if (lipoResult != 0) {
+                System.err.println("Error while running lipo on file to extract proper arch");
+                System.err.println("Command was: " + String.join(" ", lipo.command()));
+                printFromInputStream(lipoProcess.getInputStream());
+                printFromInputStream(lipoProcess.getErrorStream());
+            //    extractSymbolFromStaticLibrary(tmpPath, svmPath.toString());
+            } else {
+                extractSymbolFromStaticLibrary(tmpPath, slimmedLibJVMPath.toString());
+            }
         }
-        extractSymbolFromStaticLibrary(tmpPath, slimmedLibJVMPath.toString());
     }
 
     private void extractSymbolFromStaticLibrary(Path tmpPath, String file) throws IOException, InterruptedException {
@@ -229,7 +238,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         ar.redirectErrorStream(true);
         Process extractProcess = ar.start();
         int i = extractProcess.waitFor();
-        if (i != 0){
+        if (i != 0) {
             System.err.println("Extract failed for a static library");
             System.err.println("Command was: " + String.join(" ", ar.command()));
             printFromInputStream(extractProcess.getInputStream());
@@ -241,21 +250,21 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         this.paths = paths;
         this.projectConfiguration = projectConfiguration;
         String appName = projectConfiguration.getAppName();
-        String objectFilename = projectConfiguration.getMainClassName().toLowerCase()+".o";
+        String objectFilename = projectConfiguration.getMainClassName().toLowerCase() + ".o";
         Triplet target = projectConfiguration.getTargetTriplet();
         Path gvmPath = paths.getGvmPath();
         Path objectFile = FileOps.findFile(gvmPath, objectFilename);
         if (objectFile == null) {
-            throw new IllegalArgumentException("Linking failed, since there is no objectfile named "+objectFilename+" under "
-                    +gvmPath.toString());
+            throw new IllegalArgumentException("Linking failed, since there is no objectfile named " + objectFilename + " under "
+                    + gvmPath.toString());
         }
         ProcessBuilder linkBuilder;
-        if (projectConfiguration.isBuildStaticLib()){
+        if (projectConfiguration.isBuildStaticLib()) {
             linkBuilder = new ProcessBuilder("ar");
             linkBuilder.directory(paths.getSharedPath().toFile());
             linkBuilder.command().add("-vrcs");
             linkBuilder.command().add(appName + ".a");
-        }else{
+        } else {
             linkBuilder = new ProcessBuilder(getLinker());
             linkBuilder.command().add("-o");
             linkBuilder.command().add(getAppPath(appName));
@@ -264,15 +273,15 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
         Path gvmAppPath = gvmPath.resolve(appName);
         getAdditionalSourceFiles()
-              .forEach( r -> linkBuilder.command().add(
-                      gvmAppPath.resolve(r.replaceAll("\\..*", ".o")).toString()));
+                .forEach(r -> linkBuilder.command().add(
+                        gvmAppPath.resolve(r.replaceAll("\\..*", ".o")).toString()));
 
         linkBuilder.command().add(objectFile.toString());
         linkBuilder.command().addAll(getTargetSpecificObjectFiles());
         //exit early if building a static library, other symbols will need to be included "manually"
-        if (projectConfiguration.isBuildStaticLib()){
+        if (projectConfiguration.isBuildStaticLib()) {
             Path linkerLibs = Paths.get(paths.getTmpPath().toString(), "linker");
-            Files.list(linkerLibs).forEach( f -> linkBuilder.command().add(f.toString()));
+            Files.list(linkerLibs).forEach(f -> linkBuilder.command().add(f.toString()));
             System.err.println("You will need to add libraries from " + projectConfiguration.getJavaStaticLibsPath()
                     + " and also from " + Path.of(projectConfiguration.getGraalPath(), "lib", "svm", "clibraries", target.getOsArch2()));
             if (projectConfiguration.isUseJavaFX()) {
@@ -285,7 +294,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         if (projectConfiguration.isUseJavaFX()) {
             linkBuilder.command().add("-L" + projectConfiguration.getJavafxStaticLibsPath());
         }
-        linkBuilder.command().add("-L"+ Path.of(projectConfiguration.getGraalPath(), "lib", "svm", "clibraries", target.getOsArch2())); // darwin-amd64");
+        linkBuilder.command().add("-L" + Path.of(projectConfiguration.getGraalPath(), "lib", "svm", "clibraries", target.getOsArch2())); // darwin-amd64");
         linkBuilder.command().add("-ljava");
         linkBuilder.command().add("-ljvm");
         linkBuilder.command().add("-llibchelper");
@@ -300,7 +309,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         return linkBuilder;
     }
 
-    private void asynPrintFromInputStream (InputStream inputStream) {
+    private void asynPrintFromInputStream(InputStream inputStream) {
         Thread t = new Thread(() -> {
             try {
                 printFromInputStream(inputStream);
@@ -320,13 +329,13 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         }
     }
 
-    private static String getNativeImagePath (ProjectConfiguration configuration) {
+    private static String getNativeImagePath(ProjectConfiguration configuration) {
         String graalPath = configuration.getGraalPath();
         Path path = Path.of(graalPath, "bin", "native-image");
         return path.toString();
     }
 
-    private Process startAppProcess( Path appPath, String appName ) throws IOException {
+    private Process startAppProcess(Path appPath, String appName) throws IOException {
         ProcessBuilder runBuilder = new ProcessBuilder(appPath.resolve(appName).toString());
         runBuilder.redirectErrorStream(true);
         return runBuilder.start();
@@ -345,8 +354,8 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             processBuilder.command().add("-DGVM_VERBOSE");
         }
         processBuilder.command().addAll(getTargetSpecificCCompileFlags());
-        for( String fileName: getAdditionalSourceFiles() ) {
-            FileOps.copyResource(getAdditionalSourceFileLocation()  + fileName, workDir.resolve(fileName));
+        for (String fileName : getAdditionalSourceFiles()) {
+            FileOps.copyResource(getAdditionalSourceFileLocation() + fileName, workDir.resolve(fileName));
             processBuilder.command().add(fileName);
         }
         processBuilder.command().addAll(getTargetSpecificCCompileFlags());
@@ -357,7 +366,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         int result = p.waitFor();
         if (result != 0) {
             System.err.println("Compilation of additional sources failed with result = " + result);
-            System.err.println("Original command was "+cmds);
+            System.err.println("Original command was " + cmds);
             printFromInputStream(p.getInputStream());
             return false;
         } // we need more checks (e.g. do launcher.o and thread.o exist?)
@@ -366,7 +375,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     @Override
     public InputStream run(Path appPath, String appName) throws IOException {
-        Process runProcess = startAppProcess(appPath,appName);
+        Process runProcess = startAppProcess(appPath, appName);
         return runProcess.getInputStream();
     }
 
@@ -377,7 +386,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         InputStream is = runProcess.getInputStream();
         asynPrintFromInputStream(is);
         int result = runProcess.waitFor();
-        if (result != 0 ) {
+        if (result != 0) {
             printFromInputStream(is);
             return false;
         }
@@ -409,7 +418,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             "png", "jpg", "jpeg", "gif", "bmp",
             "license", "json");
 
-    private  List<String> getResources() {
+    private List<String> getResources() {
         List<String> resources = new ArrayList<>(resourcesList);
         resources.addAll(projectConfiguration.getResourcesList());
 
@@ -459,7 +468,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         return reflectionPath;
     }
 
-    private Path createJNIConfig(String suffix) throws IOException {
+    private Path createJNIConfig(String suffix, ProjectConfiguration config) throws IOException {
         Path gvmPath = paths.getGvmPath();
         Path jniPath = gvmPath.resolve("jniconfig-" + suffix + ".json");
         File f = jniPath.toFile();
@@ -474,11 +483,14 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
                 writeEntry(bw, javaClass,
                         "mac".equals(suffix) && javaClass.equals("java.lang.Thread"));
             }
+            for (String javaClass : config.getJniList()) {
+                writeEntry(bw, javaClass,
+                        "mac".equals(suffix) && javaClass.equals("java.lang.Thread"));
+            }
             bw.write("]");
         }
         return jniPath;
     }
-
 
 
     private static void writeEntry(BufferedWriter bw, String javaClass) throws IOException {
@@ -490,10 +502,10 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         writeSingleEntry(bw, javaClass, exclude);
     }
 
-    private static void writeSingleEntry (BufferedWriter bw, String javaClass, boolean exclude) throws IOException {
+    private static void writeSingleEntry(BufferedWriter bw, String javaClass, boolean exclude) throws IOException {
         bw.write("  {\n");
         bw.write("    \"name\" : \"" + javaClass + "\"");
-        if (! exclude) {
+        if (!exclude) {
             bw.write(",\n");
             bw.write("    \"allDeclaredConstructors\" : true,\n");
             bw.write("    \"allPublicConstructors\" : true,\n");

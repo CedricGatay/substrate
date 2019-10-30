@@ -47,11 +47,11 @@ import java.util.List;
 
 public class IosTargetConfiguration extends AbstractTargetConfiguration {
 
-    private List<String> iosAdditionalSourceFiles = Collections.singletonList("AppDelegate.m");
+    private List<String> iosAdditionalSourceFiles = Arrays.asList("AppDelegate.m", "thread.c");
 
     @Override
     List<String> getTargetSpecificLinkFlags(boolean useJavaFX, boolean usePrismSW) {
-        return Arrays.asList("-w",// "-fPIC",
+        return Arrays.asList("-w", "-fPIC",
                 "-arch", Constants.ARCH_ARM64,
                 "-mios-version-min=11.0",
                 "-isysroot", getSysroot(),
@@ -60,6 +60,7 @@ public class IosTargetConfiguration extends AbstractTargetConfiguration {
                 "-Wl,-framework,CoreGraphics",
                 "-Wl,-framework,CoreText",
                 "-Wl,-framework,OpenGLES",
+                "-Wl,-framework,Network",
                 "-Wl,-framework,MobileCoreServices");
     }
 

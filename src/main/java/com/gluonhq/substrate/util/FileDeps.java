@@ -108,7 +108,7 @@ public class FileDeps {
                             .map(s -> new File(path, s))
                             .anyMatch(f -> !hashes.get(f.getName()).equals(calculateCheckSum(f)))) {
                         Logger.logDebug("jar file has invalid hashcode");
-                        downloadJavaStatic = true;
+                        //downloadJavaStatic = true;
                     }
                 }
             }
