@@ -128,8 +128,14 @@ fprintf(stderr, "THREADIMPLMISSING\n");
 }
 
 //FIXME bridge the gap for missing SocketOptions
-/*
-int Java_jdk_net_MacOSXSocketOptions_keepAliveOptionsSupported0(){
-    return 0;
-}
-*/
+
+  void Java_jdk_net_MacOSXSocketOptions_getTcpKeepAliveIntvl0(){}
+
+  void Java_jdk_net_MacOSXSocketOptions_getTcpKeepAliveTime0(){}
+  void Java_jdk_net_MacOSXSocketOptions_getTcpkeepAliveProbes0(){}
+  void Java_jdk_net_MacOSXSocketOptions_keepAliveOptionsSupported0(){}
+  void Java_jdk_net_MacOSXSocketOptions_setTcpKeepAliveIntvl0(){}
+
+  void Java_jdk_net_MacOSXSocketOptions_setTcpKeepAliveTime0(){}
+  void Java_jdk_net_MacOSXSocketOptions_setTcpkeepAliveProbes0(){}
+

@@ -61,7 +61,21 @@ public class IosTargetConfiguration extends AbstractTargetConfiguration {
                 "-Wl,-framework,CoreText",
                 "-Wl,-framework,OpenGLES",
                 "-Wl,-framework,Network",
-                "-Wl,-framework,MobileCoreServices");
+                "-Wl,-framework,MobileCoreServices",
+                "-ljava",
+                "-ljvm",
+                "-llibchelper",
+                "-lnio",
+                "-lzip",
+                "-lnet",
+                "-lstrictmath",
+                "-lpthread",
+                "-lz",
+                "-ldl",
+                "-lsunec",
+                "-lc++"
+
+                );
     }
 
     @Override
