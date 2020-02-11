@@ -157,6 +157,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             compileBuilder.command().add("-H:IncludeResourceBundles=" + bundles);
         }
         compileBuilder.command().add("-Dsvm.platform=org.graalvm.nativeimage.Platform$"+jniPlatform);
+        compileBuilder.command().addAll(projectConfiguration.getNativeBuildOptions());
         compileBuilder.command().add("-cp");
         compileBuilder.command().add(cp);
         compileBuilder.command().addAll(projectConfiguration.getCompilerArgs());
@@ -709,7 +710,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
      */
     Path getLlcPath() throws IOException {
         if (projectConfiguration.getLlcPath() != null) {
-            Path llcPath = Path.of(projectConfiguration.getLlcPath());
+            Path llcPath = projectConfiguration.getLlcPath();
             if (!Files.exists(llcPath)) {
                 throw new IllegalArgumentException("Configuration points to an llc that does not exist: "+llcPath);
             } else {

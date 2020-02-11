@@ -42,6 +42,8 @@ import java.util.Objects;
 public class ProjectConfiguration {
 
     private Path graalPath;
+    private Path llcPath;
+    private List<String> nativeBuildOptions;
 
     private String javafxStaticSdkVersion;
     private String javaStaticSdkVersion;
@@ -258,6 +260,7 @@ public class ProjectConfiguration {
                 "graalPath='" + graalPath + '\'' +
                 ", javaStaticSdkVersion='" + javaStaticSdkVersion + '\'' +
                 ", javafxStaticSdkVersion='" + javafxStaticSdkVersion + '\'' +
+                ", nativeBuildOptions='" + nativeBuildOptions + '\'' +
                 ", usePrismSW=" + usePrismSW +
                 ", verbose=" + verbose +
                 ", targetTriplet=" + targetTriplet +
@@ -272,6 +275,7 @@ public class ProjectConfiguration {
                 ", iosConfiguration='" + iosSigningConfiguration + '\'' +
                 ", mainClassName='" + mainClassName + '\'' +
                 ", buildStaticLib='" + buildStaticLib + '\'' +
+                ", llcPath='" + llcPath + '\'' +
                 '}';
     }
 
@@ -281,5 +285,21 @@ public class ProjectConfiguration {
 
     public void setBuildStaticLib(boolean buildStaticLib) {
         this.buildStaticLib = buildStaticLib;
+    }
+
+    public Path getLlcPath() {
+        return llcPath;
+    }
+
+    public void setLlcPath(Path llcPath) {
+        this.llcPath = llcPath;
+    }
+
+    public List<String> getNativeBuildOptions() {
+        return nativeBuildOptions;
+    }
+
+    public void setNativeBuildOptions(List<String> nativeBuildOptions) {
+        this.nativeBuildOptions = nativeBuildOptions;
     }
 }

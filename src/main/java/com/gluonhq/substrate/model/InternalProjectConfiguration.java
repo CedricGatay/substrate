@@ -55,8 +55,6 @@ public class InternalProjectConfiguration {
     private String javaStaticLibs;
     private String javaFXStaticSDK;
 
-    private String llcPath;
-    private String staticRoot;
     private boolean useJNI = true;
     private boolean useJavaFX = false;
     private boolean usePrismSW = false;
@@ -206,16 +204,8 @@ public class InternalProjectConfiguration {
                        .orElse(Constants.DEFAULT_JAVAFX_STATIC_SDK_VERSION);
     }
 
-    public String getLlcPath() {
-        return llcPath;
-    }
-
-    /**
-     * Sets the LLC directory by the user
-     * @param llcPath the directory (e.g "$user/Downloads/llclib") that contains LLC
-     */
-    public void setLlcPath(String llcPath) {
-        this.llcPath = llcPath;
+    public Path getLlcPath() {
+        return publicConfig.getLlcPath();
     }
 
     public boolean isUseJNI() {
@@ -406,8 +396,6 @@ public class InternalProjectConfiguration {
                 "graalPath='" + publicConfig.getGraalPath() + '\'' +
                 ", javaStaticSdkVersion='" + getJavaStaticSdkVersion() + '\'' +
                 ", javafxStaticSdkVersion='" + getJavafxStaticSdkVersion() + '\'' +
-                ", llcPath='" + llcPath + '\'' +
-                ", StaticRoot='" + staticRoot + '\'' +
                 ", useJNI=" + useJNI +
                 ", useJavaFX=" + useJavaFX +
                 ", usePrismSW=" + usePrismSW +
@@ -431,5 +419,9 @@ public class InternalProjectConfiguration {
 
     public boolean isBuildStaticLib() {
         return publicConfig.isBuildStaticLib();
+    }
+
+    public List<String> getNativeBuildOptions() {
+        return publicConfig.getNativeBuildOptions();
     }
 }

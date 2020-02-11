@@ -66,7 +66,8 @@ public class IosTargetConfiguration extends PosixTargetConfiguration {
             "OpenGLES", "CoreText", "QuartzCore", "ImageIO",
             "CoreBluetooth", "CoreImage", "CoreLocation", "CoreMedia", "CoreMotion", "CoreVideo",
             "Accelerate", "AVFoundation", "AudioToolbox", "MediaPlayer", "UserNotifications",
-            "ARKit", "AVKit", "SceneKit", "StoreKit"
+            "ARKit", "AVKit", "SceneKit", "StoreKit",
+            "Network"
     );
 
     public IosTargetConfiguration(ProcessPaths paths, InternalProjectConfiguration configuration ) {
