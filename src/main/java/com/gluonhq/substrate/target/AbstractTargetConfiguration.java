@@ -28,6 +28,7 @@
 package com.gluonhq.substrate.target;
 
 import com.gluonhq.substrate.Constants;
+import com.gluonhq.substrate.ProjectConfiguration;
 import com.gluonhq.substrate.config.ConfigResolver;
 import com.gluonhq.substrate.model.ClassPath;
 import com.gluonhq.substrate.model.InternalProjectConfiguration;
@@ -48,6 +49,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -210,7 +212,17 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
                     "Linking failed, since there is no objectfile named " + objectFilename + " under " + gvmPath.toString())
         );
 
-        ProcessBuilder linkBuilder = new ProcessBuilder(getLinker());
+        extractObjectFromLibrariesForLinking(paths, projectConfiguration);
+
+        ProcessBuilder linkBuilder;
+        if (projectConfiguration.isBuildStaticLib()) {
+            linkBuilder = new ProcessBuilder("ar");
+            linkBuilder.directory(paths.getSharedPath().toFile());
+            linkBuilder.command().add("-vrcs");
+            linkBuilder.command().add(appName + ".a");
+        } else {
+            linkBuilder = new ProcessBuilder(getLinker());
+        }
 
         Path gvmAppPath = gvmPath.resolve(appName);
         getAdditionalSourceFiles().forEach(sourceFile -> linkBuilder.command()
@@ -224,18 +236,29 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             .distinct()
             .forEach(sourceFile -> linkBuilder.command().add(gvmAppPath.resolve(sourceFile).toString()));
 
-        getTargetSpecificLinkLibraries().forEach(linkBuilder.command()::add);
-        linkBuilder.command().addAll(getTargetSpecificLinkFlags(projectConfiguration.isUseJavaFX(), projectConfiguration.isUsePrismSW()));
+        //exit early if building a static library, other symbols will need to be included "manually"
+        if (projectConfiguration.isBuildStaticLib()) {
+            Path linkerLibs = Paths.get(paths.getTmpPath().toString(), "linker");
+            Files.list(linkerLibs).forEach(f -> linkBuilder.command().add(f.toString()));
+            System.err.println("You will need to add libraries from " + projectConfiguration.getJavaStaticLibsPath()
+                    + " and also from " + Path.of(projectConfiguration.getGraalPath().toString(), "lib", "svm", "clibraries", projectConfiguration.getTargetTriplet().getOsArch2()));
+            if (projectConfiguration.isUseJavaFX()) {
+                System.err.println("  and also from " + projectConfiguration.getJavafxStaticLibsPath());
+                return false;
+            }
+        }else {
+            getTargetSpecificLinkLibraries().forEach(linkBuilder.command()::add);
+            linkBuilder.command().addAll(getTargetSpecificLinkFlags(projectConfiguration.isUseJavaFX(), projectConfiguration.isUsePrismSW()));
 
-        getTargetSpecificLinkOutputFlags().forEach(linkBuilder.command()::add);
+            getTargetSpecificLinkOutputFlags().forEach(linkBuilder.command()::add);
 
-        addGraalStaticLibsPathToLinkProcess(linkBuilder);
-        addJavaStaticLibsPathToLinkProcess(linkBuilder);
-        if (projectConfiguration.isUseJavaFX()) {
-            addJavaFXStaticLibsPathToLinkProcess(linkBuilder);
+            addGraalStaticLibsPathToLinkProcess(linkBuilder);
+            addJavaStaticLibsPathToLinkProcess(linkBuilder);
+            if (projectConfiguration.isUseJavaFX()) {
+                addJavaFXStaticLibsPathToLinkProcess(linkBuilder);
+            }
+            linkBuilder.command().addAll(getNativeLibsLinkFlags());
         }
-        linkBuilder.command().addAll(getNativeLibsLinkFlags());
-
         linkBuilder.redirectErrorStream(true);
         String cmds = String.join(" ", linkBuilder.command());
         Logger.logDebug("link command: "+cmds);
@@ -333,7 +356,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
             FileOps.copyResource(getAdditionalSourceFileLocation()  + fileName, workDir.resolve(fileName));
             processBuilder.command().add(fileName);
         }
-        
+
         Path nativeCodeDir = paths.getNativeCodePath();
         if (Files.isDirectory(nativeCodeDir)) {
             FileOps.copyDirectory(nativeCodeDir, workDir);
@@ -346,7 +369,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         for( String fileName: getAdditionalHeaderFiles() ) {
             FileOps.copyResource(getAdditionalSourceFileLocation()  + fileName, workDir.resolve(fileName));
         }
-  
+
         processBuilder.directory(workDir.toFile());
         String cmds = String.join(" ", processBuilder.command());
         processBuilder.redirectErrorStream(true);
@@ -845,5 +868,70 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         list.addAll(configResolver.getUserInitBuildTimeList(suffix));
         return list;
     }
-    
+
+
+    private void extractObjectFromLibrariesForLinking(ProcessPaths paths, InternalProjectConfiguration projectConfiguration) throws IOException, InterruptedException {
+        if (!projectConfiguration.isBuildStaticLib()) {
+            return;
+        }
+
+
+        Path tmpPath = Paths.get(paths.getTmpPath().toString(), "linker");
+        if (!Files.exists(tmpPath)) {
+            Files.createDirectories(tmpPath);
+        }
+        //Missing pthread / z / dl, need to add them as dependency on mobile build
+
+        List<String> javaLibs = Arrays.asList("libjava", "libnio", "libzip", "libnet", "libsunec", "libextnet");
+        Path javaStaticLibsPath = projectConfiguration.getJavaStaticLibsPath();
+
+        for (String javaLib : javaLibs) {
+            String file = javaStaticLibsPath + "/" + javaLib + ".a";
+            extractSymbolFromStaticLibrary(tmpPath, file);
+        }
+
+    /* there are fat files here, need to use lipo extract, libchelper is a x86_64 one only and it works, it might be useless to run on device
+        Only libjvm seem useful, run lipo then ar to extract symbols, the other ones are "libstrictmath", "liblibchelper" */
+        List<String> jvmLibs = Arrays.asList("libjvm", "libstrictmath", "liblibchelper");
+        for (String jvmLib : jvmLibs) {
+            Path svmPath = Path.of(projectConfiguration.getGraalPath().toString(), "lib", "svm", "clibraries", projectConfiguration.getTargetTriplet().getOsArch2(), jvmLib + ".a");
+            ProcessBuilder lipo = new ProcessBuilder("lipo");
+            lipo.command().add(svmPath.toString());
+            lipo.command().add("-thin");
+            lipo.command().add(projectConfiguration.getTargetTriplet().getArch());
+            lipo.command().add("-output");
+            Path slimmedLibJVMPath = Paths.get(paths.getTmpPath().toString(), jvmLib + "." + projectConfiguration.getTargetTriplet().getArch() + ".a");
+            lipo.command().add(slimmedLibJVMPath.toString());
+            lipo.redirectErrorStream(true);
+            Process lipoProcess = lipo.start();
+            int lipoResult = lipoProcess.waitFor();
+            if (lipoResult != 0) {
+                System.err.println("Error while running lipo on file to extract proper arch");
+                System.err.println("Command was: " + String.join(" ", lipo.command()));
+                printFromInputStream(lipoProcess.getInputStream());
+                printFromInputStream(lipoProcess.getErrorStream());
+                //    extractSymbolFromStaticLibrary(tmpPath, svmPath.toString());
+            } else {
+                extractSymbolFromStaticLibrary(tmpPath, slimmedLibJVMPath.toString());
+            }
+        }
+    }
+
+
+    private void extractSymbolFromStaticLibrary(Path tmpPath, String file) throws IOException, InterruptedException {
+        ProcessBuilder ar = new ProcessBuilder("ar");
+        ar.directory(tmpPath.toFile());
+        ar.command().add("-x");
+        ar.command().add(file);
+        ar.redirectErrorStream(true);
+        Process extractProcess = ar.start();
+        int i = extractProcess.waitFor();
+        if (i != 0) {
+            System.err.println("Extract failed for a static library");
+            System.err.println("Command was: " + String.join(" ", ar.command()));
+            printFromInputStream(extractProcess.getInputStream());
+            printFromInputStream(extractProcess.getErrorStream());
+        }
+    }
+
 }

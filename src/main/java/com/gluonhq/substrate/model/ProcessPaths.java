@@ -45,6 +45,7 @@ public class ProcessPaths {
     private Path logPath;
     private Path sourcePath;
     private Path nativeCodePath;
+    private Path sharedPath;
 
     /**
      * |-- build or target
@@ -75,6 +76,7 @@ public class ProcessPaths {
         logPath = Files.createDirectories(gvmPath.resolve(Constants.LOG_PATH));
         sourcePath = clientPath.getParent().getParent().resolve(Constants.SOURCE_PATH);
         nativeCodePath = sourcePath.getParent().resolve(Constants.NATIVE_CODE_PATH);
+        sharedPath = Files.createDirectories(gvmPath.resolve(Constants.SHARED_PATH));
     }
 
     public Path getBuildRoot() {
@@ -111,6 +113,10 @@ public class ProcessPaths {
 
     public Path getNativeCodePath() {
         return nativeCodePath;
+    }
+
+    public Path getSharedPath() {
+        return sharedPath;
     }
 }
 

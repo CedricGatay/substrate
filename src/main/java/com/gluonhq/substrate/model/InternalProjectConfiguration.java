@@ -428,4 +428,8 @@ public class InternalProjectConfiguration {
                 ", mainClassName='" + getMainClassName() + '\'' +
                 '}';
     }
+
+    public boolean isBuildStaticLib() {
+        return publicConfig.isBuildStaticLib();
+    }
 }

@@ -115,6 +115,8 @@ public class Constants {
     public static final String LIB_PATH = "lib";
     public static final String LOG_PATH = "log";
     public static final String NATIVE_CODE_PATH = "native";
+    public static final String SHARED_PATH = "shared";
+
 
 
 

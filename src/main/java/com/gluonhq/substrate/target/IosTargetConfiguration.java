@@ -160,7 +160,7 @@ public class IosTargetConfiguration extends PosixTargetConfiguration {
         if (result) {
             createInfoPlist(paths);
 
-            if (!isSimulator() && !projectConfiguration.getIosSigningConfiguration().isSkipSigning()) {
+            if (!projectConfiguration.isBuildStaticLib() && !isSimulator() && !projectConfiguration.getIosSigningConfiguration().isSkipSigning()) {
                 CodeSigning codeSigning = new CodeSigning(paths, projectConfiguration);
                 if (!codeSigning.signApp()) {
                     throw new RuntimeException("Error signing the app");

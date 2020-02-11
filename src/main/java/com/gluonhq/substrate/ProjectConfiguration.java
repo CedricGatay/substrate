@@ -62,6 +62,9 @@ public class ProjectConfiguration {
     private String appName;
     private String mainClassName;
 
+    private boolean buildStaticLib = false;
+
+
     private IosSigningConfiguration iosSigningConfiguration = new IosSigningConfiguration();
 
     public ProjectConfiguration( String mainClassName ) {
@@ -213,7 +216,7 @@ public class ProjectConfiguration {
     /**
      * Sets the AppID. This acts as the application identifier in various platforms.
      * For Android, this is the equivalent of 'package' name of the application.
-     * 
+     *
      * @param appId The application ID of the application.
      */
     public void setAppId(String appId) {
@@ -268,6 +271,15 @@ public class ProjectConfiguration {
                 ", appName='" + appName + '\'' +
                 ", iosConfiguration='" + iosSigningConfiguration + '\'' +
                 ", mainClassName='" + mainClassName + '\'' +
+                ", buildStaticLib='" + buildStaticLib + '\'' +
                 '}';
+    }
+
+    public boolean isBuildStaticLib() {
+        return buildStaticLib;
+    }
+
+    public void setBuildStaticLib(boolean buildStaticLib) {
+        this.buildStaticLib = buildStaticLib;
     }
 }
