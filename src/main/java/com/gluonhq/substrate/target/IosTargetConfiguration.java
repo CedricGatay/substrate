@@ -139,6 +139,9 @@ public class IosTargetConfiguration extends PosixTargetConfiguration {
 
     @Override
     List<String> getAdditionalSourceFiles() {
+        if (projectConfiguration.isBuildStaticLib()){
+            return Collections.singletonList("stubs.c");
+        }
         return iosAdditionalSourceFiles;
     }
 
@@ -158,10 +161,10 @@ public class IosTargetConfiguration extends PosixTargetConfiguration {
     public boolean link() throws IOException, InterruptedException {
         boolean result = super.link();
 
-        if (result) {
+        if (result && !projectConfiguration.isBuildStaticLib()) {
             createInfoPlist(paths);
 
-            if (!projectConfiguration.isBuildStaticLib() && !isSimulator() && !projectConfiguration.getIosSigningConfiguration().isSkipSigning()) {
+            if (!isSimulator() && !projectConfiguration.getIosSigningConfiguration().isSkipSigning()) {
                 CodeSigning codeSigning = new CodeSigning(paths, projectConfiguration);
                 if (!codeSigning.signApp()) {
                     throw new RuntimeException("Error signing the app");
@@ -292,12 +295,13 @@ public class IosTargetConfiguration extends PosixTargetConfiguration {
     }
 
     private boolean lipoMatch(Path path) {
+        return true;/*
         try {
             return lipoInfo(path).indexOf(getArch()) > 0;
         } catch (IOException | InterruptedException e) {
             Logger.logSevere("Error processing lipo for " + path);
         }
-        return false;
+        return false;*/
     }
 
     private String lipoInfo(Path path) throws IOException, InterruptedException {

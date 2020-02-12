@@ -169,6 +169,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         Path workDir = gvmPath.resolve(projectConfiguration.getAppName());
         compileBuilder.directory(workDir.toFile());
         compileBuilder.redirectErrorStream(true);
+        Logger.logDebug("workDir: " + workDir.toAbsolutePath());
         Process compileProcess = compileBuilder.start();
         InputStream inputStream = compileProcess.getInputStream();
         asynPrintFromInputStream(inputStream);
